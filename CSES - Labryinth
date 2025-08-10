@@ -1,0 +1,246 @@
+// Thank God!
+#include <bits/stdc++.h>
+#include <cstdint>
+#include <numeric>
+using namespace std;
+
+// Aliases for simple data types
+using ll = long long;
+using ld = long double;
+using ull = unsigned long long;
+using pii = pair<int, int>;
+using pll = pair<ll, ll>;
+
+// Neat definitions
+#define PI 3.14159265358979
+#define E 2.7182818284590
+#define all(x) x.begin(), x.end()
+#define nl '\n'
+#define sqrt sqrtl
+#define sz(a) (int)a.size()
+
+// RNG
+mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+
+// simplified alias for vectors
+template <class T>
+using v = vector<T>;
+
+// overloaded stream operators
+#pragma region streams
+template <class T1, class T2>
+istream &operator>>(istream &in, pair<T1, T2> &p)
+{
+    in >> p.first >> p.second;
+    return in;
+}
+
+template <class T1, class T2>
+ostream &operator<<(ostream &out, pair<T1, T2> &p)
+{
+    out << p.first << " " << p.second << nl;
+    return out;
+}
+
+template <class T, size_t N>
+istream &operator>>(istream &in, array<T, N> &a)
+{
+    for (T &x : a)
+        in >> x;
+    return in;
+}
+
+template <class T, size_t N>
+ostream &operator<<(ostream &out, array<T, N> &a)
+{
+    for (T &x : a)
+        out << x << nl;
+    return out;
+}
+
+template <class T>
+istream &operator>>(istream &in, v<T> &v)
+{
+    for (auto &x : v)
+        in >> x;
+    return in;
+}
+template <class T1, class T2>
+ostream &operator<<(ostream &out, v<pair<T1, T2>> &v)
+{
+    for (auto &p : v)
+        cout << p;
+    return out;
+}
+
+template <class T>
+ostream &operator<<(ostream &out, v<T> &v)
+{
+    for (int i = 0; i < v.size(); i++)
+        cout << v[i] << " \n"[i == (int)v.size() - 1];
+    return out;
+}
+
+#pragma endregion
+
+// MULTITEST TOGGLE
+const bool test = false;
+/*-------------------------------------------------------------------------------*/
+#pragma region templates
+#pragma endregion
+v<string> grid;
+v<v<bool>> visited;
+string best;
+string path="";
+pii a, b;
+int n,m;
+v<v<char>> P;
+
+// pure DFS is too slow for the blank example
+// i.e. Scarpitta's cookie crumbs
+/*
+A.......
+........
+........
+........
+.......B
+*/
+void dfs(int i, int j, char P) {
+    path.push_back(P);
+    if(i>=n||j>=m||i<0||j<0||grid[i][j]=='#'||grid[i][j]=='@')
+    {  
+        path.pop_back();
+        return; 
+    }
+    if(i==b.first&&j==b.second&&sz(path)<sz(best)) {
+        best=path;
+        path.pop_back();   
+        return;
+    }
+    grid[i][j]='@';
+    dfs(i+1, j, 'D');
+    dfs(i, j+1, 'R');
+    dfs(i-1, j, 'U');
+    dfs(i, j-1, 'L');
+    path.pop_back();   
+    grid[i][j]='.';
+}
+void solve() {
+    cin >> n >> m;
+    grid.resize(n);
+    visited.resize(n, v<bool>(m,false));
+    P.resize(n, v<char>(m, '@'));
+    cin >> grid;
+    best=string(n*m, 'A');
+    for(int i=0; i<n; i++)
+        for(int j=0; j<m; j++)
+            if(grid[i][j]=='A')
+                a.first=i, a.second=j;
+            else if (grid[i][j]=='B')
+                b.first=i, b.second=j;
+    // BFS should be better
+    queue<pair<pii,int>> q;
+    q.push({a,0});
+    visited[a.first][a.second]=1;
+    // find shortest path between A and B
+    // subproblem: find the length of shortest path
+    int seen=0;
+    P[a.first][a.second]='@';
+    while(!q.empty()) {
+        int i = q.front().first.first, j = q.front().first.second, dist = q.front().second;
+        q.pop();
+        if(i==b.first&&j==b.second) {
+            seen=dist;
+            continue;
+        }
+        vector<pair<pii,char>> vec = {{{-1,0}, 'U'}, {{1,0}, 'D'}, {{0,-1}, 'L'}, {{0,1}, 'R'}};
+        for(auto &p : vec) {
+            int ii=p.first.first;
+            int jj = p.first.second;
+            char c = p.second;
+            if(i+ii<0||j+jj<0||i+ii>=n||j+jj>=m||visited[i+ii][j+jj]||grid[i+ii][j+jj]=='#')
+                continue;
+            visited[i+ii][j+jj]=true;
+            P[i+ii][j+jj]=c;
+            q.push({{i+ii, j+jj}, dist+1});
+        }
+    }
+    // print ANY shortest path
+    // cout << seen << nl;
+
+    if(P[b.first][b.second]=='@') {
+        cout << "NO" << nl;
+        return;
+    }
+    int i=b.first, j=b.second;
+    while(i!=a.first||j!=a.second) {
+        path.push_back(P[i][j]);
+        switch (P[i][j]) {
+            case 'U': {i++; break;}
+            case 'D': {i--; break;}
+            case 'L': {j++; break;}
+            case 'R': {j--; break;}
+        }
+    }
+    reverse(all(path));
+
+    // grid[a.first][a.second]='@';
+    // dfs(a.first-1, a.second, 'U');
+
+    // grid[a.first][a.second]='@';
+    // dfs(a.first+1, a.second, 'D');
+    
+    // grid[a.first][a.second]='@';
+    // dfs(a.first, a.second-1, 'L');
+    
+    // grid[a.first][a.second]='@';
+    // dfs(a.first, a.second+1, 'R');
+
+    // if(best.size()==n*m) {
+    //     cout << "NO" << nl;
+    // }
+    // else {
+    //     cout << "YES" << nl;
+    //     cout << sz(best) << nl;
+    //     cout << best << nl;
+    // }
+
+   
+        cout << "YES" << nl;
+        cout << sz(path) << nl;
+        cout << path << nl;
+    
+}
+
+int main()
+{
+#ifdef LOCAL
+    freopen("in.txt", "r", stdin);
+#else
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+#endif
+    // testcases
+    int t;
+    if (test)
+        cin >> t;
+    else
+        t = 1;
+    while (t--)
+    {
+        solve();
+    }
+}
+
+/*
+-try out more cases
+-attack the problem creatively/at different angles
+-what am i missing?
+-CHECK YOUR CODE
+-pay attention to BOUNDS
+-errors - out of bounds, edge case(n=0, n=1?), integer overflow, etc.
+-WHEN IN DOUBT, USE LONG LONG
+-check the for loops
+-watch out for division errors (use double and ll when needed)
+*/
+// Thank God!
